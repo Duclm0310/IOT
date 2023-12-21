@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Your Firebase Web App</title>
+
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyCjTpfpDxDWv4r69T_MMFWA5n8uIDic34s",
+      authDomain: "iot1690-34584.firebaseapp.com",
+      databaseURL: "https://iot1690-34584-default-rtdb.firebaseio.com",
+      projectId: "iot1690-34584",
+      storageBucket: "iot1690-34584.appspot.com",
+      messagingSenderId: "950268916967",
+      appId: "1:950268916967:web:002d7503e5c5b0d953de42",
+      measurementId: "G-TWE6GNVY6V"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+
+    // Function to update the UI with Firebase data
+    function updateUI(data) {
+      document.getElementById('humidity').innerText = `Humidity: ${data.Humidity}`;
+      document.getElementById('relay').innerText = `Relay: ${data.Relay}`;
+      document.getElementById('servo').innerText = `Servo: ${data.Servo}`;
+      document.getElementById('soil_moisture').innerText = `Soil Moisture: ${data.Soil_moisture}`;
+      document.getElementById('temperature').innerText = `Temperature: ${data.Temperature}`;
+      // document.getElementById('rain_value').innerText = `Rain Value: ${data.rainValue}`;
+      // Lấy phần tử HTML có id là 'rain_value'
+      var rainValueElement = document.getElementById('rain_value');
+
+      // Kiểm tra giá trị của data.rainValue
+      if (data.rainValue == 1) {
+        // Nếu data.rainValue là 1, in ra false
+        rainValueElement.innerText = 'Rain Value: false';
+      } else if (data.rainValue == 0) {
+        // Nếu data.rainValue là 0, in ra true
+        rainValueElement.innerText = 'Rain Value: true';
+      }
+      }
+
+    // Function to update Relay value in Firebase
+    function updateRelay(value) {
+    console.log('Updating Relay:', value);
+    set(ref(getDatabase(), 'Outputs/Relay'), value);
+    }
+
+    function updateServo(value) {
+    console.log('Updating Servo:', value);
+    set(ref(getDatabase(), 'Outputs/Servo'), value);
+    }
+
+    // Listen for changes in Firebase data
+    const dataRef = ref(getDatabase(), 'Outputs');
+    onValue(dataRef, (snapshot) => {
+      const data = snapshot.val();
+      updateUI(data);
+      updateChart(data.Temperature);
+    });
+
+    function updateTemperature(data) {
+    const temperatureElement = document.getElementById('temperature');
+    temperatureElement.innerText = `Temperature: ${data.Temperature}`;
+
+    // Lấy giá trị nhiệt độ từ Firebase
+    const temperatureValue = parseFloat(data.Temperature);
+
+    // Áp dụng màu sắc dựa trên giá trị nhiệt độ
+    const color = mapTemperatureToColor(temperatureValue);
+    temperatureElement.style.color = color;
+    }
+
+// Add event listeners using addEventListener
+    document.getElementById('relay-on-button').addEventListener('click', () => updateRelay(true));
+    document.getElementById('relay-off-button').addEventListener('click', () => updateRelay(false));
+    document.getElementById('servo-on-button').addEventListener('click', () => updateServo(true));
+    document.getElementById('servo-off-button').addEventListener('click', () => updateServo(false));
+    //////////////////////////////////////////////////////////////////////
+    let temperatureChart;
+
+
+
+// Hàm để cập nhật dữ liệu của biểu đồ
+function updateChart(temperature) {
+  // Thêm giá trị nhiệt độ vào dữ liệu của biểu đồ
+  temperatureData.push(temperature);
+
+  // Giới hạn số lượng giá trị hiển thị trên biểu đồ
+  const maxDataPoints = 10;
+  if (temperatureData.length > maxDataPoints) {
+    temperatureData.shift(); // Xoá phần tử đầu tiên nếu đã đạt đến giới hạn
+  }
+
+  // Vẽ lại biểu đồ
+  temperatureChart.data.labels = Array.from({ length: temperatureData.length }, (_, i) => '');
+  temperatureChart.data.datasets[0].data = temperatureData;
+  temperatureChart.update();
+}
+
+// Biểu đồ sẽ giữ dữ liệu của 10 điểm gần nhất
+const temperatureData = Array(30).fill(null);
+
+// Khởi tạo biểu đồ khi trang tải
+document.addEventListener('DOMContentLoaded', () => {
+  const chartCanvas = document.getElementById('temperatureChart').getContext('2d');
+  temperatureChart = new Chart(chartCanvas, {
+    type: 'line',
+    data: {
+      labels: Array.from({ length: temperatureData.length }, (_, i) => ''),
+      datasets: [{
+        label: 'Temperature',
+        data: temperatureData,
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 2,
+        fill: false,
+      }],
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: false,
+        },
+      },
+    },
+  });
+});
+  </script>
+
+<style>
+    
+
+    section {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #dashboard {
+      grid-column: span 4;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .dashboard-item {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #3498db;
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      padding: 20px;
+    }
+
+    section {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #dashboard {
+      grid-column: span 4;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .dashboard-item {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    footer {
+      background-color: #3498db;
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+    .chart-container {
+    width: 500px;
+    height: 500px;
+    display: inline-block;
+    margin-right: 20px; /* Khoảng cách giữa hai sơ đồ */
+  }
+
+    
+  </style>
+
+</head>
+<body>
+    <header>
+        <h1>Your Web App</h1>
+      </header>
+    
+
+  <main>
+    <section id="dashboard">
+      <div class="dashboard-item">
+        <h3>Humidity</h3>
+        <p id="humidity">Loading...</p>
+      </div>
+      <div class="dashboard-item">
+        <h3>Relay</h3>
+        <p id="relay">Loading...</p>
+        <button id="relay-on-button">Turn On</button>
+        <button id="relay-off-button">Turn Off</button>
+      </div>
+      <div class="dashboard-item">
+        <h3>Servo</h3>
+        <p id="servo">Loading...</p>
+        <button id="servo-on-button">Turn On</button>
+        <button id="servo-off-button">Turn Off</button>
+      </div>
+      <div class="dashboard-item">
+        <h3>Soil Moisture</h3>
+        <p id="soil_moisture">Loading...</p>
+      </div>
+      <div class="dashboard-item">
+        <h3>Temperature</h3>
+        <p id="temperature">Loading...</p>
+      </div>
+      <div class="dashboard-item">
+        <h3>Rain Value</h3>
+        <p id="rain_value">
+          Loading...</p>
+      </div>
+    </section>
+
+    <div class="chart-container" id="temperatureChartContainer">
+      <canvas id="temperatureChart" width="500" height="500"></canvas>
+    </div>
+      
+
+
+
+  </main>
+
+
+  <footer>
+    Designed by Lê Minh Đức
+  </footer>
+  <script src="test1.js"></script>
+  
+</body>
+</html>
